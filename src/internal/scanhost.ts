@@ -21,20 +21,20 @@ const scanHost = (
           ip: hostIP,
           port: hostPort,
         };
+        client.destroy();
         resolve(scanResult);
-        client.end();
       }
     );
 
     client.on('error', (error: any) => {
       if (logging) {
         console.log(
-          'scanHost->on error->host: ${hostIP} port: ${hostPort} error:',
+          `scanHost->on error->host: ${hostIP} port: ${hostPort} error:`,
           error
         );
       }
 
-      client.end();
+      client.destroy();
       reject();
     });
 
