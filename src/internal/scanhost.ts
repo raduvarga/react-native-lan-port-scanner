@@ -7,7 +7,16 @@ const scanHost = (
   timeout: number,
   logging: boolean
 ): Promise<LSSingleScanResult> => {
+
+  const scanResult: LSSingleScanResult = {
+    ip: hostIP,
+    port: hostPort,
+  };
+
   return new Promise<LSSingleScanResult>((resolve, reject) => {
+    var connectingTimeout: number;
+    var alreadyConnectedTimeout: number;
+
     const client = net.createConnection(
       { host: hostIP, port: hostPort },
       () => {
@@ -17,14 +26,22 @@ const scanHost = (
           );
         }
 
-        const scanResult: LSSingleScanResult = {
-          ip: hostIP,
-          port: hostPort,
-        };
-        resolve(scanResult);
-        client.end();
+        clearTimeout(connectingTimeout);
+        // wait a few millisec to get an initialisation message
+        alreadyConnectedTimeout = setTimeout(() => {
+            resolve(scanResult);
+            client.end();
+          }, 100);
       }
     );
+
+    // wait for data if available
+    client.on('data', (data: any) => {
+        scanResult.data = data;
+        clearTimeout(alreadyConnectedTimeout);
+        resolve(scanResult);
+        client.end();
+    });
 
     client.on('error', (error: any) => {
       if (logging) {
@@ -45,7 +62,7 @@ const scanHost = (
       reject();
     });
 
-    setTimeout(() => {
+    connectingTimeout = setTimeout(() => {
       if (logging) {
         console.log(
           `scanHost->force timeout->host: ${hostIP} port: ${hostPort}`
