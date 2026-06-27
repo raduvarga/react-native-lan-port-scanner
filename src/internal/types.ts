@@ -15,6 +15,7 @@ export interface LSNetworkInfoExtra extends LSNetworkInfo {
 export interface LSSingleScanResult {
   ip: string;
   port: number;
+  data?: any;
 }
 
 export interface LSScanConfig {
