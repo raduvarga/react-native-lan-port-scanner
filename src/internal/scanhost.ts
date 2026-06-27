@@ -14,8 +14,8 @@ const scanHost = (
   };
 
   return new Promise<LSSingleScanResult>((resolve, reject) => {
-    var connectingTimeout;
-    var alreadyConnectedTimeout;
+    var connectingTimeout: any;
+    var alreadyConnectedTimeout: any;
 
     const client = net.createConnection(
       { host: hostIP, port: hostPort },
