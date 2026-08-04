@@ -14,8 +14,28 @@ const scanHost = (
   };
 
   return new Promise<LSSingleScanResult>((resolve, reject) => {
-    var connectingTimeout: any;
-    var alreadyConnectedTimeout: any;
+    // var connectingTimeout: any;
+
+    function stop() {
+      let disconnectMessage = "disconnect\0";
+      try {
+        client.write(disconnectMessage);
+        if (logging) {
+          console.log(
+            `scanHost->createConnection->stop: disconnect`
+          );
+        }
+      } catch (error: any) {
+        if (logging) {
+          console.log(
+            `scanHost->createConnection->stop error: ${error}`
+          );
+        }
+      }
+      client.end();
+    }
+
+    let connected = false;
 
     const client = net.createConnection(
       { host: hostIP, port: hostPort },
@@ -26,21 +46,20 @@ const scanHost = (
           );
         }
 
-        clearTimeout(connectingTimeout);
-        // wait a few millisec to get an initialisation message
-        alreadyConnectedTimeout = setTimeout(() => {
-            resolve(scanResult);
-            client.end();
-          }, 100);
+        connected = true;
       }
     );
 
     // wait for data if available
     client.on('data', (data: any) => {
-        scanResult.data = data;
-        clearTimeout(alreadyConnectedTimeout);
-        resolve(scanResult);
-        client.end();
+      if (logging) {
+        console.log(
+          `scanHost->createConnection->data`
+        );
+      }
+      scanResult.data = data;
+      stop();
+      resolve(scanResult);
     });
 
     client.on('error', (error: any) => {
@@ -59,18 +78,23 @@ const scanHost = (
       if (logging) {
         console.log(`scanHost->on close->host: ${hostIP} port: ${hostPort}`);
       }
-      reject();
+      // reject();
     });
 
-    connectingTimeout = setTimeout(() => {
-      if (logging) {
-        console.log(
-          `scanHost->force timeout->host: ${hostIP} port: ${hostPort}`
-        );
+    setTimeout(() => {
+      if (connected) {
+        stop();
+        resolve(scanResult);
+      } else {
+        if (logging) {
+          console.log(
+            `scanHost->force timeout->host: ${hostIP} port: ${hostPort}`
+          );
+        }
+        client.destroy();
+        reject();
       }
 
-      client.destroy();
-      reject();
     }, timeout + 10);
   });
 };
